@@ -66,8 +66,8 @@ def run_experiment(model, lr, decay_delta=1.0, decay_k=1, epochs=400,
 
 
 epochs = 10
-adam_lrs = [0.0001, 0.0005, 0.001]
-sgd_lrs = [0.05, 0.1, 0.5]
+adam_lrs = [0.003]
+sgd_lrs = [0.3, 1]
 momentum = 0.9
 def get_resnet():
     return WideResNet(depth=28, num_classes=10).cuda()

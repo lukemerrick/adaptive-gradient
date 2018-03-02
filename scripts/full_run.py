@@ -37,7 +37,8 @@ def run_experiment(model, lr, decay_delta=1.0, decay_k=1, epochs=400,
                    adaptive=False, amsgrad=False, momentum=0.9, nesterov=True,
                    model_name='default_model', schedule_name='default_schedule',
                    logdir='../runs'):
-    has_momentum = momentum != 0
+    has_momentum = (momentum != 0) and (not adaptive)
+    nesterov = nesterov and has_momentum
     experiment_name = get_experiement_name(model_name, schedule_name, adaptive,
                                            amsgrad, has_momentum, lr)
     tlog = tensorboard_logger.Logger(logdir + '/' + experiment_name)
@@ -64,8 +65,8 @@ def run_experiment(model, lr, decay_delta=1.0, decay_k=1, epochs=400,
             tensorboard_stats=['val_loss', 'val_err'])
 
 epochs = 400
-adam_lr = 0.0005
-sgd_lr = 0.05
+adam_lr = 0.0003
+sgd_lr = 0.5
 momentum = 0.9
 def get_resnet():
     return WideResNet(depth=28, num_classes=10).cuda()
@@ -84,5 +85,3 @@ for use_momentum in [True, False]:
         run_experiment(get_resnet(), sgd_lr, delta, k, epochs, momentum=current_momentum,
                 model_name='wideresnet_28', schedule_name=schedule_name,
                 logdir='../runs/nonadaptive')
-
-
