@@ -8,9 +8,9 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import pytorch4adam
 
-from tqdm import tqdm
-
 import tensorboard_logger
+
+from concurrent.futures import ThreadPoolExecutor
 
 def get_experiement_name(model_name, schedule_name, adaptive, amsgrad, momentum, lr):
     if adaptive and momentum:
@@ -50,7 +50,7 @@ def run_experiment(model, lr, decay_delta=1.0, decay_k=1, epochs=400,
     else:
         optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum,
                 nesterov=nesterov)
-    for epoch in tqdm(range(epochs)):
+    for epoch in range(epochs):
         if not adaptive:
             decay_lr(optimizer, epoch)
         dnn_utils.train(train_loader, model, criterion, optimizer, epoch,
@@ -64,24 +64,53 @@ def run_experiment(model, lr, decay_delta=1.0, decay_k=1, epochs=400,
             verbose=False, tensorboard_log_function=tlog.log_value,
             tensorboard_stats=['val_loss', 'val_err'])
 
-epochs = 400
-adam_lr = 0.0003
-sgd_lr = 0.5
+# experimental config
+epochs = 175
 momentum = 0.9
+logdir_adaptive = '../runs/adaptive_round_2/'
+logdir_nonadaptive = '../runs/nonadaptive_round_2/'
+
 def get_resnet():
-    return WideResNet(depth=28, num_classes=10).cuda()
+    return WideResNet(depth=28, num_classes=10, widen_factor=10, drop_rate=0.5).cuda()
+def get_single_layer_mlp():
+    return MLP([32*32*3, 512, 10]).cuda()
+def get_double_layer_mlp():
+    return MLP([32*32*3, 512, 512, 10]).cuda()
+
 criterion = nn.CrossEntropyLoss().cuda()
-nonadaptive_decay_params = [('smooth_decay_0.,985', 0.985, 1), ('step_decay_0.1_100', 0.1, 100)]
+nonadaptive_decay_params = [('smooth_decay_0.,975', 0.975, 1), ('step_decay_0.1_50', 0.1, 50)]
+resnet_model_list = [('wideresnet_28_10', get_resnet)]
+mlp_model_list = [('mlp_512_single', get_single_layer_mlp), ('mlp_512_double', get_double_layer_mlp)]
 
-# adaptive method tests
-for amsgrad in [True, False]:
-    run_experiment(get_resnet(), adam_lr, epochs=epochs, adaptive=True, amsgrad=amsgrad,
-            model_name='wideresnet_28', schedule_name='no_decay', logdir='../runs/adaptive/')
+# define a generator to allow for lazy creation of models to pipe into multiprocessing code below
+def train_args_generator(model_list):
+    for model_name, model_func in model_list:
+        if 'resnet' in model_name:
+            adam_lr = 0.0003
+            sgd_lr = 0.5
+        else:
+            adam_lr = 0.0003
+            sgd_lr = 0.03
 
-# nonadaptive tests
-for use_momentum in [True, False]:
-    current_momentum = momentum if use_momentum else 0.0
-    for schedule_name, delta, k in nonadaptive_decay_params:
-        run_experiment(get_resnet(), sgd_lr, delta, k, epochs, momentum=current_momentum,
-                model_name='wideresnet_28', schedule_name=schedule_name,
-                logdir='../runs/nonadaptive')
+        # adaptive method tests
+        for amsgrad in [True, False]:
+            kwargs = dict(model=model_func(), lr=adam_lr, epochs=epochs, adaptive=True, amsgrad=amsgrad,
+                    model_name=model_name, schedule_name='no_decay', logdir=logdir_adaptive)
+            yield kwargs
+
+        # nonadaptive tests
+        for use_momentum in [True, False]:
+            current_momentum = momentum if use_momentum else 0.0
+            for schedule_name, delta, k in nonadaptive_decay_params:
+                kwargs = dict(model=model_func(), lr=sgd_lr, delta, k, epochs, momentum=current_momentum,
+                        model_name=model_name, schedule_name=schedule_name,
+                        logdir=logdir_nonadaptive)
+                yield kwargs
+
+# use multiprocessing to complete experimentation much faster (MLP models tend to use a quarter GB of vram and 5-10% of GPU compute power)
+resnet_n_threads = 2
+mlp_n_threads = 10
+with ThreadPoolExecutor(max_workers=resnet_n_threads) as executor:
+    executor.map(lambda kwargs: run_experiment(**kwargs), train_args_generator(resnet_model_list))
+with ThreadPoolExecutor(max_workers=mlp_n_threads) as executor:
+    executor.map(lambda kwargs: run_experiment(**kwargs), train_args_generator(mlp_model_list))
