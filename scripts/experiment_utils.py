@@ -29,10 +29,11 @@ def get_experiement_name(model_name, schedule_name, adaptive, amsgrad, momentum,
                                 schedule_name, lr_name])
     return experiment_name
 
-def run_experiment(model, lr, decay_delta=1.0, decay_k=1, epochs=400,
-                   adaptive=False, amsgrad=False, momentum=0.9, nesterov=True,
-                   model_name='default_model', schedule_name='default_schedule',
-                   logdir='../runs'):
+def run_experiment(model, lr, criterion=nn.CrossEntropyLoss().cuda(),
+                    decay_delta=1.0, decay_k=1, epochs=400,
+                    adaptive=False, amsgrad=False, momentum=0.9, nesterov=True,
+                    model_name='default_model', schedule_name='default_schedule',
+                    logdir='../runs'):
     has_momentum = (momentum != 0) and (not adaptive)
     nesterov = nesterov and has_momentum
     experiment_name = get_experiement_name(model_name, schedule_name, adaptive,
