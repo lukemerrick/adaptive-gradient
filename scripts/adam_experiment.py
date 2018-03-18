@@ -14,7 +14,7 @@ import tensorboard_logger
 from concurrent.futures import ProcessPoolExecutor
 
 # experimental config
-epochs = 120
+epochs = 300
 logdir = '../runs/adam_tuning/'
 
 def get_resnet(multi_gpu=True):
@@ -41,6 +41,7 @@ def train_args_generator(lrs, beta_ones, beta_twos, amsgrads=[True, False]):
 # run the corresponding experiments
 model_name, model_func = 'wideresnet_40_4', get_resnet
 for lr, b1, b2, use_amsgrad in train_args_generator(lrs, beta_ones, beta_twos):
+    model_name = model_name + '_b1={}_b2={}'.format(b1,b2)
     experiment_utils.run_experiment(model=model_func(), lr=lr, epochs=epochs,
             adaptive=True, amsgrad=use_amsgrad, model_name=model_name,
             schedule_name='no_lr_decay', logdir=logdir)
