@@ -4,6 +4,7 @@ from average_meter import AverageMeter
 
 from torch.autograd import Variable
 import torch.utils.data
+import torch.nn.functional as F
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
@@ -178,13 +179,25 @@ def log_stats_to_tensorboard(stats, tensorboard_log_function, epoch):
     for name, meter in stats.items():
         tensorboard_log_function(name, meter.mean, epoch)
 
-def get_cifar10_loaders(data_dir='../data', batch_size=128):
+def reflect_pad(x, px=4):
+    var = Variable(x.unsqueeze(0), requires_grad=False, volatile=True)
+    return F.pad(var, (px, px, px, px), mode='reflect').data.squeeze()
+
+def get_cifar10_loaders(data_dir='../data', batch_size=128, augmentation=False):
     normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
                                      std=[x/255.0 for x in [63.0, 62.1, 66.7]])
     transform_train = transforms.Compose([
             transforms.ToTensor(),
             normalize,
             ])
+    if augmentation:
+        transform_train = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(reflect_pad),
+            transforms.ToPILImage(),
+            transforms.RandomCrop(32),
+            transforms.RandomHorizontalFlip(),
+            transform_train])
     transform_test = transforms.Compose([
         transforms.ToTensor(),
         normalize
