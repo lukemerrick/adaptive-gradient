@@ -39,10 +39,10 @@ for trial in range(5):
     experiment_utils.run_experiment(model=get_resnet(multi_gpu=False), lr=sgd_lr, epochs=epochs,
             decay_delta=0.95, decay_k=1, model_name=config_model_name,
             schedule_name='smooth_0.95', logdir=logdir)
-    # run SGD stepped decay
-    experiment_utils.run_experiment(model=get_resnet(multi_gpu=False), lr=sgd_lr, epochs=epochs,
-            decay_delta=0.01, decay_k=40, model_name=config_model_name,
-            schedule_name='step_.01_100', logdir=logdir)
+    # # run SGD stepped decay
+    # experiment_utils.run_experiment(model=get_resnet(multi_gpu=False), lr=sgd_lr, epochs=epochs,
+    #         decay_delta=0.01, decay_k=40, model_name=config_model_name,
+    #         schedule_name='step_.01_40', logdir=logdir)
 
 
 
