@@ -225,7 +225,7 @@ def get_mnist_loaders(data_dir='../data', batch_size=128):
         ])
     kwargs = {'num_workers': 1, 'pin_memory': True}
     train_loader = torch.utils.data.DataLoader(
-        datasets.__dict__['MNSIT'](data_dir, train=True, download=True,
+        datasets.__dict__['MNIST'](data_dir, train=True, download=True,
                          transform=transform_train),
         batch_size=batch_size, shuffle=True, **kwargs)
     val_loader = torch.utils.data.DataLoader(
