@@ -199,9 +199,9 @@ def get_cifar10_loaders(data_dir='../data', batch_size=128, augmentation=False):
             transforms.RandomHorizontalFlip(),
             transform_train])
     transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        normalize
-        ])
+            transforms.ToTensor(),
+            normalize
+            ])
     kwargs = {'num_workers': 1, 'pin_memory': True}
     train_loader = torch.utils.data.DataLoader(
         datasets.__dict__['CIFAR10'](data_dir, train=True, download=True,
@@ -209,6 +209,27 @@ def get_cifar10_loaders(data_dir='../data', batch_size=128, augmentation=False):
         batch_size=batch_size, shuffle=True, **kwargs)
     val_loader = torch.utils.data.DataLoader(
         datasets.__dict__['CIFAR10'](data_dir, train=False,
+                                     transform=transform_test),
+        batch_size=batch_size, shuffle=True, **kwargs)
+    return train_loader, val_loader
+
+def get_mnist_loaders(data_dir='../data', batch_size=128):
+    normalize = transforms.Normalize((0.1307,), (0.3081,))
+    transform_train = transforms.Compose([
+            transforms.ToTensor(),
+            normalize,
+            ])
+    transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+        ])
+    kwargs = {'num_workers': 1, 'pin_memory': True}
+    train_loader = torch.utils.data.DataLoader(
+        datasets.__dict__['MNSIT'](data_dir, train=True, download=True,
+                         transform=transform_train),
+        batch_size=batch_size, shuffle=True, **kwargs)
+    val_loader = torch.utils.data.DataLoader(
+        datasets.__dict__['MNIST'](data_dir, train=False,
                                      transform=transform_test),
         batch_size=batch_size, shuffle=True, **kwargs)
     return train_loader, val_loader

@@ -32,6 +32,7 @@ def get_experiement_name(model_name, schedule_name, adaptive, amsgrad, momentum,
 def run_experiment(model, lr, criterion=nn.CrossEntropyLoss().cuda(),
                     decay_delta=1.0, decay_k=1, epochs=400,
                     adaptive=False, amsgrad=False, momentum=0.9, nesterov=True,
+                    task = 'cifar10',
                     model_name='default_model', schedule_name='default_schedule',
                     logdir='../runs'):
     has_momentum = (momentum != 0) and (not adaptive)
@@ -39,7 +40,12 @@ def run_experiment(model, lr, criterion=nn.CrossEntropyLoss().cuda(),
     experiment_name = get_experiement_name(model_name, schedule_name, adaptive,
                                            amsgrad, has_momentum, lr)
     tlog = tensorboard_logger.Logger(logdir + '/' + experiment_name)
-    train_loader, val_loader = dnn_utils.get_cifar10_loaders()
+    if task == 'cifar10':
+        train_loader, val_loader = dnn_utils.get_cifar10_loaders()
+    elif task == 'mnist':
+        train_loader, val_loader = dnn_utils.get_mnist_loaders()
+    else:
+        raise Exception('only cifar10 and minist supported')
     decay_lr = dnn_utils.get_lr_decay_function(decay_delta, decay_k, tlog.log_value)
     cudnn.benchmark = True
     if adaptive:
