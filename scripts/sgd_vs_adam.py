@@ -68,7 +68,7 @@ def run_experiment_from_generator(tpl):
     model = model_func()
     experiment_utils.run_experiment(model, **kwargs)
 
-def run_paralell_experiment(generator, n_processes=4, trials=30):
+def run_paralell_experiment(generator, n_processes=10, trials=30):
     criterion = nn.CrossEntropyLoss().cuda()
     with ProcessPoolExecutor(max_workers=n_processes) as executor:
         executor.map(run_experiment_from_generator, generator)
