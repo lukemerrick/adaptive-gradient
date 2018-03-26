@@ -33,36 +33,46 @@ def get_double_layer_mlp():
 
 
 # define experiment generator for paralellization
-def experiment_generator(trials=10, model_func=get_lenet, model_name='lenet',
+def experiment_batch_generator(trials=10, model_func=get_lenet, model_name='lenet',
         sgd_lr=0.03, adam_lr=0.0003, task='mnist', epochs=40, logdir='../runs/'):
     for trial in range(trials):
+        batch = []
         config_model_name = '[trial_{}]{}_'.format(trial, task) + model_name
         # run ADAM
         kwargs = dict(lr=adam_lr, epochs=epochs,
                 task='mnist',
                 adaptive=True, amsgrad=False, model_name=config_model_name,
                 schedule_name='no_lr_decay', logdir=logdir)
-        yield model_func, kwargs
+        batch.append((model_func, kwargs))
 
         # run amsgrad
         kwargs = dict(lr=adam_lr, epochs=epochs,
                 task='mnist',
                 adaptive=True, amsgrad=True, model_name=config_model_name,
                 schedule_name='no_lr_decay', logdir=logdir)
-        yield model_func, kwargs
-    
+        batch.append((model_func, kwargs))
+
         # run SGD smooth decay
         kwargs = dict(lr=sgd_lr, epochs=epochs,
                 task='mnist',
                 decay_delta=0.95, decay_k=1, model_name=config_model_name,
                 schedule_name='smooth_0.95', logdir=logdir)
-        yield model_func, kwargs
-        
-        # # run SGD stepped decay
-        # experiment_utils.run_experiment(model=get_resnet(multi_gpu=False), lr=sgd_lr, epochs=epochs,
-        #         decay_delta=0.01, decay_k=40, model_name=config_model_name,
-        #         schedule_name='step_.01_40', logdir=logdir)
+        batch.append((model_func, kwargs))
 
+         # run SGD stepped decay
+        kwargs = dict (lr=sgd_lr, epochs=epochs,
+                task='mnist',
+                decay_delta=0.5, decay_k=10, model_name=config_model_name,
+                schedule_name='step_.5_10', logdir=logdir)
+        batch.append((model_func, kwargs))
+
+        # run with different step
+        kwargs = dict (lr=sgd_lr, epochs=epochs,
+                task='mnist',
+                decay_delta=0.2, decay_k=15, model_name=config_model_name,
+                schedule_name='step_.2_15', logdir=logdir)
+        batch.append((model_func, kwargs))
+        yield batch
 def run_experiment_from_generator(tpl):
     model_func, kwargs = tpl
     model = model_func()
@@ -74,8 +84,11 @@ def run_paralell_experiment(generator, n_processes=10, trials=30):
         executor.map(run_experiment_from_generator, generator)
 
 common_config = dict(trials=30, sgd_lr=0.03, adam_lr=0.0003, task='mnist',
-                     epochs=40, logdir = '../runs/mnist_comparisons/')
+                     epochs=40, logdir = '../runs/mnist_full/')
 models = (('lenet',get_lenet), ('mlp_1024', get_single_layer_mlp), ('mlp_1024_1024', get_double_layer_mlp))
 generators = [experiment_generator(model_func=func, model_name=name, **common_config) for name, func in models]
-experiments = [exp for gen in generators for exp in gen]
-run_paralell_experiment(experiments)
+for gen in generators:
+    for batch in gen:
+        run_paralell_experiment(batch)
+# experiments = [exp for gen in generators for exp in gen]
+# run_paralell_experiment(experiments)
