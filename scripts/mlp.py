@@ -12,8 +12,10 @@ class MLP(nn.Module):
                             for i in range(len(layer_sizes)-1)]
         # initialize weights
         for i, layer in enumerate(self.layers):
-            layer.weight = nn.init.xavier_normal(layer.weight,
-                                                gain=nn.init.calculate_gain('relu'))
+            # this line is commented to avoid initializing to same weights
+            # every time
+            #layer.weight = nn.init.xavier_normal(layer.weight,
+            #                                    gain=nn.init.calculate_gain('relu'))
             layer_name = 'output layer' if i == len(self.layers)-1\
                                 else 'hidden layer {}'.format(i+1)
             self.add_module(layer_name, layer)
