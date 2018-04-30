@@ -59,19 +59,6 @@ def experiment_batch_generator(trials=10, model_func=get_lenet, model_name='lene
                 schedule_name='smooth_0.96', logdir=logdir)
         batch.append((model_func, kwargs))
 
-        ## run SGD stepped decay
-        #kwargs = dict (lr=sgd_lr, epochs=epochs,
-        #        task='mnist',
-        #        decay_delta=0.45, decay_k=15, model_name=config_model_name,
-        #        schedule_name='step_.45_10', logdir=logdir)
-        #batch.append((model_func, kwargs))
-
-        ## run with different step
-        #kwargs = dict (lr=sgd_lr, epochs=epochs,
-        #        task='mnist',
-        #        decay_delta=0.2, decay_k=30, model_name=config_model_name,
-        #        schedule_name='step_.2_30', logdir=logdir)
-        #batch.append((model_func, kwargs))
         yield batch
 def run_experiment_from_generator(tpl):
     model_func, kwargs = tpl
@@ -88,11 +75,9 @@ adam_lrs = [0.0001, 0.00033, 0.001, 0.0033, 0.01]
 
 common_config = dict(trials=30, task='mnist',
                      epochs=100, logdir = '../runs/mnist_sgd_vs_adam/')
-#model_configs = (('lenet', get_lenet, 0.033, 0.0033),
-#                  ('mlp_1024', get_single_layer_mlp, 0.1, 0.00033),
+model_configs = (('lenet', get_lenet, 0.033, 0.0033),
+                  ('mlp_1024', get_single_layer_mlp, 0.1, 0.00033))
 #                  ('mlp_1024_1024', get_double_layer_mlp, 0.033, 0.0001))
-model_configs = (('mlp_1024', get_single_layer_mlp, 0.1, 0.00033),
-                    ('mlp_1024_1024', get_double_layer_mlp, 0.033, 0.0001))
 
 for model_name, model_func, sgd_lr, adam_lr in model_configs:
     generator = experiment_batch_generator(model_func=model_func, model_name=model_name,
